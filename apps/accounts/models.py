@@ -47,5 +47,13 @@ class FinancialAccount(models.Model):
         auto_now=True,
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "name"],
+                name="unique_account_name_per_user",
+            ),
+        ]
+
     def __str__(self):
         return self.name

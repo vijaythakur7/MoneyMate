@@ -23,4 +23,6 @@ urlpatterns = [
     path("hello/", hello),
     path("users/<int:id>/", user_detail, name="user-detail"),
     path("search/", search, name="search"),
+    path("auth/login/", login_view, name="login"),
+    path("auth/logout/", logout_view, name="logout"),
 ]

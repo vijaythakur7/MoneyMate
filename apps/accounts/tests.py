@@ -1,6 +1,8 @@
 from django.test import TestCase
+from rest_framework.test import APIClient
 from apps.accounts.models import FinancialAccount
 from apps.users.models import User
+from apps.accounts.api.serializers import FinancialAccountSerializer
 
 # Create your tests here.
 
@@ -232,4 +234,115 @@ class FinancialAccountIsolationTests(TestCase):
         FinancialAccount.objects.filter(
             id=self.vijay_account.id
         ).exists()
+    )
+
+    def test_financial_account_serializer(self):
+        serializer = FinancialAccountSerializer(
+        self.vijay_account
+    )
+
+        self.assertEqual(
+        serializer.data["id"],
+        self.vijay_account.id,
+    )
+
+        self.assertEqual(
+        serializer.data["name"],
+        "Vijay Cash Wallet",
+    )
+
+        self.assertEqual(
+        serializer.data["account_type"],
+        "CASH",
+    )
+
+        self.assertEqual(
+        serializer.data["currency"],
+        "INR",
+    )
+
+    def test_serializer_rejects_empty_account_name(self):
+        serializer = FinancialAccountSerializer(
+        data={
+            "name": "",
+            "account_type": "CASH",
+            "balance": "5000.00",
+            "currency": "INR",
+        }
+    )
+
+        self.assertFalse(serializer.is_valid())
+
+        self.assertIn(
+        "name",
+        serializer.errors,
+    )
+
+    def test_authenticated_user_can_list_own_accounts(self):
+        client = APIClient()
+
+        client.force_authenticate(
+        user=self.vijay
+    )
+
+        response = client.get(
+        "/api/accounts/"
+    )
+
+        self.assertEqual(
+        response.status_code,
+        200,
+    )
+
+        self.assertEqual(
+        len(response.data["accounts"]),
+        1,
+    )
+
+        self.assertEqual(
+        response.data["accounts"][0]["id"],
+        self.vijay_account.id,
+    )
+
+    def test_user_cannot_see_another_users_accounts_through_api(self):
+        client = APIClient()
+
+        client.force_authenticate(
+        user=self.vijay
+    )
+
+        response = client.get(
+        "/api/accounts/"
+    )
+
+        self.assertEqual(
+        response.status_code,
+        200,
+    )
+
+        account_ids = [
+        account["id"]
+        for account in response.data["accounts"]
+    ]
+
+        self.assertIn(
+        self.vijay_account.id,
+        account_ids,
+    )
+
+        self.assertNotIn(
+        self.rahul_account.id,
+        account_ids,
+    )
+
+    def test_unauthenticated_user_cannot_list_accounts_through_api(self):
+        client = APIClient()
+
+        response = client.get(
+        "/api/accounts/"
+    )
+
+        self.assertEqual(
+        response.status_code,
+        403,
     )

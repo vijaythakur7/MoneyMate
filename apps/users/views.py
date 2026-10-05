@@ -22,6 +22,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.middleware.csrf import get_token
 
 class HelloAPIView(APIView):
 
@@ -62,3 +63,10 @@ def logout_view(request):
         {"detail": "Logout successful."},
         status=200,
     )
+
+def csrf_token_view(request):
+    token = get_token(request)
+
+    return JsonResponse({
+        "csrfToken": token,
+    })

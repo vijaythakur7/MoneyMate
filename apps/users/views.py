@@ -20,7 +20,15 @@ def search(request):
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+class HelloAPIView(APIView):
+
+    def get(self, request):
+        return Response({
+            "message": "Hello from MoneyMate API"
+        })
 
 @require_POST
 def login_view(request):

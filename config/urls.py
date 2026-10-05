@@ -28,4 +28,5 @@ urlpatterns = [
     path("auth/logout/", logout_view, name="logout"),
     path("accounts/",financial_account_list,name="financial-account-list",),
     path("accounts/<int:account_id>/",financial_account_detail,name="financial-account-detail",),
+    path("api/hello/",HelloAPIView.as_view(),name="api-hello",),
 ]

@@ -346,3 +346,417 @@ class FinancialAccountIsolationTests(TestCase):
         response.status_code,
         403,
     )
+
+    def test_authenticated_user_can_create_account(self):
+        client = APIClient()
+
+        client.force_authenticate(
+        user=self.vijay
+    )
+
+        response = client.post(
+        "/api/accounts/",
+        {
+            "name": "HDFC Bank",
+            "account_type": "BANK",
+            "balance": "25000.00",
+            "currency": "INR",
+        },
+        format="json",
+    )
+
+        self.assertEqual(
+        response.status_code,
+        201,
+    )
+
+        self.assertEqual(
+        response.data["name"],
+        "HDFC Bank",
+    )
+
+        self.assertEqual(
+        response.data["account_type"],
+        "BANK",
+    )
+
+        self.assertEqual(
+        response.data["currency"],
+        "INR",
+    )
+
+        account = FinancialAccount.objects.get(
+        name="HDFC Bank",
+    )
+
+        self.assertEqual(
+        account.user,
+        self.vijay,
+    )
+
+    def test_unauthenticated_user_cannot_create_account(self):
+        client = APIClient()
+
+        response = client.post(
+        "/api/accounts/",
+        {
+            "name": "Unauthorized Account",
+            "account_type": "BANK",
+            "balance": "1000.00",
+            "currency": "INR",
+        },
+        format="json",
+    )
+
+        self.assertEqual(
+        response.status_code,
+        403,
+    )
+
+    def test_create_account_rejects_invalid_account_type(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.post(
+            "/api/accounts/",
+            {
+                "name": "Invalid Account",
+                "account_type": "INVALID",
+                "balance": "1000.00",
+                "currency": "INR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "account_type",
+            response.data,
+        )
+
+    def test_create_account_ignores_client_user(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.post(
+            "/api/accounts/",
+            {
+                "name": "Client User Attempt",
+                "account_type": "BANK",
+                "balance": "1000.00",
+                "currency": "INR",
+                "user": self.rahul.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201,
+        )
+
+        account = FinancialAccount.objects.get(
+            name="Client User Attempt",
+        )
+
+        self.assertEqual(
+            account.user,
+            self.vijay,
+        )
+
+        self.assertNotEqual(
+            account.user,
+            self.rahul,
+        )
+
+    def test_create_account_rejects_empty_name(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.post(
+            "/api/accounts/",
+            {
+                "name": "",
+                "account_type": "BANK",
+                "balance": "25000.00",
+                "currency": "INR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+### User can view own account  ####
+    def test_authenticated_user_can_view_own_account_through_api(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.get(
+            f"/api/accounts/{self.vijay_account.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            response.data["id"],
+            self.vijay_account.id,
+        )
+
+        self.assertEqual(
+            response.data["name"],
+            "Vijay Cash Wallet",
+        )
+
+###  Cannot View Rahul's Account  ###
+
+    def test_user_cannot_view_another_users_account_through_api(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.get(
+            f"/api/accounts/{self.rahul_account.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+###   Unauthenticated Detail ###
+
+    def test_unauthenticated_user_cannot_view_account_through_api(self):
+        client = APIClient()
+
+        response = client.get(
+            f"/api/accounts/{self.vijay_account.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+###  User Can PUT Own Account  ###
+
+    def test_authenticated_user_can_put_own_account(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.put(
+            f"/api/accounts/{self.vijay_account.id}/",
+            {
+                "name": "HDFC Salary Account",
+                "account_type": "BANK",
+                "balance": "30000.00",
+                "currency": "INR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.vijay_account.refresh_from_db()
+
+        self.assertEqual(
+            self.vijay_account.name,
+            "HDFC Salary Account",
+        )
+
+        self.assertEqual(
+            self.vijay_account.account_type,
+            "BANK",
+        )
+
+
+### User Can PATCH Own Account   ###
+
+    def test_authenticated_user_can_patch_own_account(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.patch(
+            f"/api/accounts/{self.vijay_account.id}/",
+            {
+                "name": "Updated Wallet",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.vijay_account.refresh_from_db()
+
+        self.assertEqual(
+            self.vijay_account.name,
+            "Updated Wallet",
+        )
+
+        self.assertEqual(
+            self.vijay_account.account_type,
+            "CASH",
+        )
+
+###   Cannot PUT Rahul's Account  ###
+
+    def test_user_cannot_put_another_users_account(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.put(
+            f"/api/accounts/{self.rahul_account.id}/",
+            {
+                "name": "Hacked Account",
+                "account_type": "BANK",
+                "balance": "999999.00",
+                "currency": "INR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+        self.rahul_account.refresh_from_db()
+
+        self.assertEqual(
+            self.rahul_account.name,
+            "Rahul Cash Wallet",
+        )
+
+###   Cannot PATCH Rahul's Account   ###
+
+    def test_user_cannot_patch_another_users_account(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.patch(
+            f"/api/accounts/{self.rahul_account.id}/",
+            {
+                "name": "Hacked Account",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+        self.rahul_account.refresh_from_db()
+
+        self.assertEqual(
+            self.rahul_account.name,
+            "Rahul Cash Wallet",
+        )
+
+###  User can delete own account  ###
+
+    def test_authenticated_user_can_delete_own_account(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.delete(
+            f"/api/accounts/{self.vijay_account.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            204,
+        )
+
+        self.assertFalse(
+            FinancialAccount.objects.filter(
+                id=self.vijay_account.id
+            ).exists()
+        )
+
+###   Test another user's account   ###
+
+    def test_user_cannot_delete_another_users_account(self):
+        client = APIClient()
+
+        client.force_authenticate(
+            user=self.vijay
+        )
+
+        response = client.delete(
+            f"/api/accounts/{self.rahul_account.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+        self.assertTrue(
+            FinancialAccount.objects.filter(
+                id=self.rahul_account.id
+            ).exists()
+        )
+
+###   Test unauthenticated DELETE   ###
+
+    def test_unauthenticated_user_cannot_delete_account(self):
+        client = APIClient()
+
+        response = client.delete(
+            f"/api/accounts/{self.vijay_account.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )

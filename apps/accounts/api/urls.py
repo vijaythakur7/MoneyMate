@@ -1,14 +1,15 @@
 from django.urls import path
 
 from apps.accounts.api.views import (
-    FinancialAccountListAPIView,
+    # FinancialAccountListAPIView,
     FinancialAccountDetailAPIView,
+    FinancialAccountListCreateAPIView,
 )
 
 
 urlpatterns = [
     path("accounts/",
-        FinancialAccountListAPIView.as_view(),
+        FinancialAccountListCreateAPIView.as_view(),
         name="api-account-list",
     ),
     path(

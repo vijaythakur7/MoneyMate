@@ -1,11 +1,12 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+# from rest_framework.views import APIView
+# from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import FinancialAccount
 from apps.accounts.api.serializers import FinancialAccountSerializer
-from django.shortcuts import get_object_or_404
+# from django.shortcuts import get_object_or_404
 
 # class FinancialAccountListAPIView(APIView):
 
@@ -131,12 +132,57 @@ from django.shortcuts import get_object_or_404
 #             status=204,
 #         )
 
+#######################################################################
 
-class FinancialAccountListCreateAPIView(ListCreateAPIView):
+# class FinancialAccountListCreateAPIView(ListCreateAPIView):
 
-    permission_classes = [IsAuthenticated]
+#     permission_classes = [IsAuthenticated]
 
+#     serializer_class = FinancialAccountSerializer
+
+#     def get_queryset(self):
+#         return FinancialAccount.objects.filter(
+#             user=self.request.user
+#         )
+
+#     def list(self, request, *args, **kwargs):
+#         queryset = self.get_queryset()
+
+#         serializer = self.get_serializer(
+#             queryset,
+#             many=True,
+#         )
+
+#         return Response({
+#             "accounts": serializer.data,
+#         })
+
+#     def perform_create(self, serializer):
+#         serializer.save(
+#             user=self.request.user
+#         )
+
+
+# class FinancialAccountDetailAPIView(
+#     RetrieveUpdateDestroyAPIView
+# ):
+
+#     permission_classes = [IsAuthenticated]
+
+#     serializer_class = FinancialAccountSerializer
+
+#     lookup_url_kwarg = "account_id"
+
+#     def get_queryset(self):
+#         return FinancialAccount.objects.filter(
+#             user=self.request.user
+#         )
+
+########################################################################
+
+class FinancialAccountViewSet(ModelViewSet):
     serializer_class = FinancialAccountSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return FinancialAccount.objects.filter(
@@ -156,23 +202,4 @@ class FinancialAccountListCreateAPIView(ListCreateAPIView):
         })
 
     def perform_create(self, serializer):
-        serializer.save(
-            user=self.request.user
-        )
-
-
-class FinancialAccountDetailAPIView(
-    RetrieveUpdateDestroyAPIView
-):
-
-    permission_classes = [IsAuthenticated]
-
-    serializer_class = FinancialAccountSerializer
-
-    lookup_url_kwarg = "account_id"
-
-    def get_queryset(self):
-        return FinancialAccount.objects.filter(
-            user=self.request.user
-        )
-
+        serializer.save(user=self.request.user)

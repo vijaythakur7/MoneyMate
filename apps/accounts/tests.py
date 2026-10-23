@@ -67,9 +67,9 @@ class FinancialAccountIsolationTests(TestCase):
         self.assertIsNone(account)
 
     def test_unauthenticated_user_cannot_access_accounts(self):
-        response = self.client.get("/accounts/")
+        response = self.client.get("/api/accounts/")
 
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
     def test_authenticated_user_can_access_own_accounts(self):
         self.client.login(
@@ -77,7 +77,7 @@ class FinancialAccountIsolationTests(TestCase):
         password="StrongPassword123!",
     )
 
-        response = self.client.get("/accounts/")
+        response = self.client.get("/api/accounts/")
 
         self.assertEqual(response.status_code, 200)
 
@@ -99,7 +99,7 @@ class FinancialAccountIsolationTests(TestCase):
         password="StrongPassword123!",
     )
 
-        response = self.client.get("/accounts/")
+        response = self.client.get("/api/accounts/")
 
         self.assertEqual(response.status_code, 200)
 
@@ -127,7 +127,7 @@ class FinancialAccountIsolationTests(TestCase):
     )
 
         response = self.client.get(
-        f"/accounts/{self.vijay_account.id}/"
+        f"/api/accounts/{self.vijay_account.id}/"
     )
 
         self.assertEqual(response.status_code, 200)
@@ -157,17 +157,14 @@ class FinancialAccountIsolationTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_user_can_update_own_account(self):
-        self.client.login(
-        username="vijay",
-        password="StrongPassword123!",
-    )
+        client = APIClient()
+        client.force_authenticate(user=self.vijay)
 
-        response = self.client.post(
-        f"/accounts/{self.vijay_account.id}/",
-        {
-            "name": "Updated Cash Wallet",
-        },
-    )
+        response = client.patch(
+    f"/api/accounts/{self.vijay_account.id}/",
+    {"name": "Updated Cash Wallet"},
+    format="json",
+)
 
         self.assertEqual(response.status_code, 200)
 
@@ -179,17 +176,14 @@ class FinancialAccountIsolationTests(TestCase):
     )
 
     def test_user_cannot_update_another_users_account(self):
-        self.client.login(
-        username="vijay",
-        password="StrongPassword123!",
-    )
+        client = APIClient()
+        client.force_authenticate(user=self.vijay)
 
-        response = self.client.post(
-        f"/accounts/{self.rahul_account.id}/",
-        {
-            "name": "Hacked Account",
-        },
-    )
+        response = client.patch(
+    f"/api/accounts/{self.rahul_account.id}/",
+    {"name": "Hacked Account"},
+    format="json",
+)
 
         self.assertEqual(response.status_code, 404)
 
@@ -207,7 +201,7 @@ class FinancialAccountIsolationTests(TestCase):
     )
 
         response = self.client.delete(
-        f"/accounts/{self.rahul_account.id}/"
+        f"/api/accounts/{self.rahul_account.id}/"
     )
 
         self.assertEqual(response.status_code, 404)
@@ -225,10 +219,10 @@ class FinancialAccountIsolationTests(TestCase):
     )
 
         response = self.client.delete(
-        f"/accounts/{self.vijay_account.id}/"
+        f"/api/accounts/{self.vijay_account.id}/"
     )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
         self.assertFalse(
         FinancialAccount.objects.filter(

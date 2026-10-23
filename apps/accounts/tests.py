@@ -1,5 +1,5 @@
 from django.test import TestCase
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from apps.accounts.models import FinancialAccount
 from apps.users.models import User
 from apps.accounts.api.serializers import FinancialAccountSerializer
@@ -69,7 +69,7 @@ class FinancialAccountIsolationTests(TestCase):
     def test_unauthenticated_user_cannot_access_accounts(self):
         response = self.client.get("/api/accounts/")
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_authenticated_user_can_access_own_accounts(self):
         self.client.login(
@@ -338,7 +338,7 @@ class FinancialAccountIsolationTests(TestCase):
 
         self.assertEqual(
         response.status_code,
-        403,
+        401,
     )
 
     def test_authenticated_user_can_create_account(self):
@@ -404,7 +404,7 @@ class FinancialAccountIsolationTests(TestCase):
 
         self.assertEqual(
         response.status_code,
-        403,
+        401,
     )
 
     def test_create_account_rejects_invalid_account_type(self):
@@ -557,7 +557,7 @@ class FinancialAccountIsolationTests(TestCase):
 
         self.assertEqual(
             response.status_code,
-            403,
+            401,
         )
 
 ###  User Can PUT Own Account  ###
@@ -752,5 +752,80 @@ class FinancialAccountIsolationTests(TestCase):
 
         self.assertEqual(
             response.status_code,
-            403,
+            401,
         )
+
+
+class FinancialAccountPermissionTests(APITestCase):
+
+    def setUp(self):
+        self.vijay = User.objects.create_user(
+            username="vijay_permission_test",
+            email="vijay_permission@example.com",
+            password="StrongPassword123!",
+        )
+
+        self.rahul = User.objects.create_user(
+            username="rahul_permission_test",
+            email="rahul_permission@example.com",
+            password="StrongPassword123!",
+        )
+
+        self.vijay_account = FinancialAccount.objects.create(
+            user=self.vijay,
+            name="Vijay Cash",
+            account_type="CASH",
+            balance="1000.00",
+            currency="INR",
+        )
+
+        self.rahul_account = FinancialAccount.objects.create(
+            user=self.rahul,
+            name="Rahul Cash",
+            account_type="CASH",
+            balance="2000.00",
+            currency="INR",
+        )
+
+        self.client = APIClient()
+
+    def test_user_can_access_own_account(self):
+        self.client.force_authenticate(user=self.vijay)
+
+        response = self.client.get(
+            f"/api/accounts/{self.vijay_account.id}/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_user_cannot_access_another_users_account(self):
+        self.client.force_authenticate(user=self.vijay)
+
+        response = self.client.get(
+            f"/api/accounts/{self.rahul_account.id}/"
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_user_cannot_update_another_users_account(self):
+        self.client.force_authenticate(user=self.vijay)
+
+        response = self.client.patch(
+            f"/api/accounts/{self.rahul_account.id}/",
+            {"name": "Hacked Account"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+        self.rahul_account.refresh_from_db()
+
+        self.assertEqual(
+            self.rahul_account.name,
+            "Rahul Cash",
+        )
+
+    def test_unauthenticated_user_cannot_list_accounts(self):
+        response = self.client.get("/api/accounts/")
+
+        self.assertIn(response.status_code, [401, 403])

@@ -1,5 +1,6 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from common.permissions import IsObjectOwner
 # from rest_framework.views import APIView
 # from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.viewsets import ModelViewSet
@@ -182,7 +183,10 @@ from apps.accounts.api.serializers import FinancialAccountSerializer
 
 class FinancialAccountViewSet(ModelViewSet):
     serializer_class = FinancialAccountSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        IsObjectOwner,
+    ]
 
     def get_queryset(self):
         return FinancialAccount.objects.filter(

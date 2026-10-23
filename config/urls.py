@@ -18,6 +18,10 @@ from django.contrib import admin
 from django.urls import path,include
 from apps.users.views import *
 from apps.accounts.views import *
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,4 +35,6 @@ urlpatterns = [
     # path("accounts/<int:account_id>/",financial_account_detail,name="financial-account-detail",),
     path("api/hello/",HelloAPIView.as_view(),name="api-hello",),
     path("api/",include("apps.accounts.api.urls"),),
+    path("api/auth/token/",TokenObtainPairView.as_view(),name="token_obtain_pair",),
+    path("api/auth/token/refresh/",TokenRefreshView.as_view(),name="token_refresh",),
 ]

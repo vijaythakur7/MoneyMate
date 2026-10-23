@@ -27,8 +27,8 @@ urlpatterns = [
     path("auth/login/", login_view, name="login"),
     path("auth/logout/", logout_view, name="logout"),
     path("auth/csrf/",csrf_token_view,name="csrf-token",),
-    path("accounts/",financial_account_list,name="financial-account-list",),
-    path("accounts/<int:account_id>/",financial_account_detail,name="financial-account-detail",),
+    # path("accounts/",financial_account_list,name="financial-account-list",),
+    # path("accounts/<int:account_id>/",financial_account_detail,name="financial-account-detail",),
     path("api/hello/",HelloAPIView.as_view(),name="api-hello",),
     path("api/",include("apps.accounts.api.urls"),),
 ]

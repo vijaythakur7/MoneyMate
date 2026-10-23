@@ -2,7 +2,10 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.http import HttpResponse
+from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import AllowAny
 
+from apps.users.serializers import UserRegistrationSerializer
 
 def hello(request):
     print("Method:", request.method)
@@ -70,3 +73,9 @@ def csrf_token_view(request):
     return JsonResponse({
         "csrfToken": token,
     })
+
+
+class UserRegistrationAPIView(CreateAPIView):
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [AllowAny]
+    authentication_classes = []

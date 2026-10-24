@@ -3,7 +3,14 @@ from django.shortcuts import render
 # Create your views here.
 from django.http import HttpResponse
 from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 
 from apps.users.serializers import UserRegistrationSerializer
 
@@ -12,9 +19,37 @@ def hello(request):
     print("Path:", request.path)
     return HttpResponse("Hello from MoneyMate!")
 
+@extend_schema(
+    summary="Get user detail",
+    parameters=[
+        OpenApiParameter(
+            name="id",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH,
+            description="User ID",
+        )
+    ],
+    responses={200: OpenApiTypes.STR},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def user_detail(request, id):
     return HttpResponse(f"User ID: {id}")
 
+@extend_schema(
+    summary="Search",
+    parameters=[
+        OpenApiParameter(
+            name="q",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="Search query",
+        )
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def search(request):
     query = request.GET.get("q")
 
@@ -34,7 +69,32 @@ class HelloAPIView(APIView):
             "message": "Hello from MoneyMate API"
         })
 
-@require_POST
+@extend_schema(
+    summary="User login",
+    description=(
+        "Authenticates a user with their username and password. "
+        "On success, creates a Django session."
+    ),
+    request={
+        "application/x-www-form-urlencoded": {
+            "type": "object",
+            "properties": {
+                "username": {"type": "string"},
+                "password": {"type": "string", "format": "password"},
+            },
+            "required": ["username", "password"],
+        }
+    },
+    responses={
+        200: OpenApiTypes.OBJECT,
+        401: OpenApiResponse(description="Invalid username or password."),
+        403: OpenApiResponse(description="CSRF verification failed."),
+    },
+    tags=["Authentication"],
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
 def login_view(request):
     username = request.POST.get("username")
     password = request.POST.get("password")
@@ -57,8 +117,18 @@ def login_view(request):
         {"detail": "Login successful."},
         status=200,
     )
-
-@require_POST
+@extend_schema(
+    summary="User logout",
+    description="Logs out the current user and clears their Django session.",
+    request=None,
+    responses={
+        200: OpenApiTypes.OBJECT,
+        403: OpenApiResponse(description="Authentication or CSRF verification failed."),
+    },
+    tags=["Authentication"],
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def logout_view(request):
     logout(request)
 
@@ -67,6 +137,13 @@ def logout_view(request):
         status=200,
     )
 
+@extend_schema(
+    summary="Get CSRF token",
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@authentication_classes([])
 def csrf_token_view(request):
     token = get_token(request)
 

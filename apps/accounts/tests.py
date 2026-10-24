@@ -829,3 +829,93 @@ class FinancialAccountPermissionTests(APITestCase):
         response = self.client.get("/api/accounts/")
 
         self.assertIn(response.status_code, [401, 403])
+
+
+class FinancialAccountQueryTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="account_query_user",
+            email="account_query@example.com",
+            password="StrongPassword123!",
+        )
+
+        self.other_user = User.objects.create_user(
+            username="other_query_user",
+            email="other_query@example.com",
+            password="StrongPassword123!",
+        )
+
+        self.bank = FinancialAccount.objects.create(
+            user=self.user,
+            name="HDFC Bank",
+            account_type="BANK",
+            balance="25000.00",
+            currency="INR",
+        )
+
+        self.cash = FinancialAccount.objects.create(
+            user=self.user,
+            name="Daily Cash",
+            account_type="CASH",
+            balance="1000.00",
+            currency="INR",
+        )
+
+        self.other_bank = FinancialAccount.objects.create(
+            user=self.other_user,
+            name="HDFC Other User",
+            account_type="BANK",
+            balance="90000.00",
+            currency="INR",
+        )
+
+        self.client.force_authenticate(user=self.user)
+        self.url = "/api/accounts/"
+
+    def test_filter_by_account_type(self):
+        response = self.client.get(
+            self.url, {"account_type": "BANK"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["name"],
+            "HDFC Bank",
+        )
+
+    def test_search_by_account_name(self):
+        response = self.client.get(
+            self.url, {"search": "HDFC"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+
+    def test_ordering_by_balance(self):
+        response = self.client.get(
+            self.url, {"ordering": "-balance"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["results"][0]["name"],
+            "HDFC Bank",
+        )
+
+    def test_other_users_accounts_are_never_returned(self):
+        response = self.client.get(
+            self.url, {"search": "Other User"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 0)
+
+    def test_pagination_page_size(self):
+        response = self.client.get(
+            self.url, {"page": 1, "page_size": 1}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(len(response.data["results"]), 1)

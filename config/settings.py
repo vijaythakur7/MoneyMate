@@ -156,4 +156,7 @@ REST_FRAMEWORK = {
         "anon": "20/min",
         "user": "100/min",
     },
+
+    "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
+    
 }

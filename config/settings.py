@@ -163,6 +163,13 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": (
         "drf_spectacular.openapi.AutoSchema"
     ),
+
+    "DEFAULT_VERSIONING_CLASS": (
+    "rest_framework.versioning.URLPathVersioning"
+    ),
+        "DEFAULT_VERSION": "v1",
+        "ALLOWED_VERSIONS": ["v1", "v2"],
+        "VERSION_PARAM": "version",
     
 }
 

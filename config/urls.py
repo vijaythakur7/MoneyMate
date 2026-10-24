@@ -54,5 +54,15 @@ urlpatterns = [
 
     # Alternative documentation UI.
     path("api/redoc/",SpectacularRedocView.as_view(url_name="schema"),name="redoc",),
-    
+
+    path(
+        "api/<str:version>/",
+        include("apps.accounts.api.urls"),
+    ),
+
+    # Existing, unversioned FinancialAccount API
+    path(
+        "api/",
+        include("apps.accounts.api.urls"),
+    ),
 ]

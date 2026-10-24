@@ -84,12 +84,12 @@ class FinancialAccountIsolationTests(TestCase):
         data = response.json()
 
         self.assertEqual(
-        len(data["accounts"]),
+        len(data["results"]),
         1,
     )
 
         self.assertEqual(
-        data["accounts"][0]["id"],
+        data["results"][0]["id"],
         self.vijay_account.id,
     )
 
@@ -107,7 +107,7 @@ class FinancialAccountIsolationTests(TestCase):
 
         account_ids = [
         account["id"]
-        for account in data["accounts"]
+        for account in data["results"]
     ]
 
         self.assertIn(
@@ -289,12 +289,12 @@ class FinancialAccountIsolationTests(TestCase):
     )
 
         self.assertEqual(
-        len(response.data["accounts"]),
+        len(response.data["results"]),
         1,
     )
 
         self.assertEqual(
-        response.data["accounts"][0]["id"],
+        response.data["results"][0]["id"],
         self.vijay_account.id,
     )
 
@@ -316,7 +316,7 @@ class FinancialAccountIsolationTests(TestCase):
 
         account_ids = [
         account["id"]
-        for account in response.data["accounts"]
+        for account in response.data["results"]
     ]
 
         self.assertIn(
@@ -432,7 +432,7 @@ class FinancialAccountIsolationTests(TestCase):
 
         self.assertIn(
             "account_type",
-            response.data,
+            response.data["error"]["details"],
         )
 
     def test_create_account_ignores_client_user(self):
@@ -498,7 +498,7 @@ class FinancialAccountIsolationTests(TestCase):
 
         self.assertIn(
             "name",
-            response.data,
+            response.data["error"]["details"],
         )
 
 ### User can view own account  ####

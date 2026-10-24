@@ -169,7 +169,7 @@ class UserRegistrationAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn("email", response.data)
+        self.assertIn("email",response.data["error"]["details"],)
 
     def test_mismatched_passwords_are_rejected(self):
         self.payload["password_confirm"] = "Different!Password_92"
@@ -181,7 +181,7 @@ class UserRegistrationAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn("password_confirm", response.data)
+        self.assertIn("password_confirm", response.data["error"]["details"],)
 
     def test_weak_password_is_rejected(self):
         self.payload["password"] = "123"
@@ -194,4 +194,4 @@ class UserRegistrationAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn("password", response.data)
+        self.assertIn("password", response.data["error"]["details"],)

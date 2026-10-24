@@ -11,7 +11,7 @@ from rest_framework import filters, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from apps.accounts.api.pagination import AccountPagination
 # from django.shortcuts import get_object_or_404
-
+from drf_spectacular.utils import extend_schema
 # class FinancialAccountListAPIView(APIView):
 
 #     permission_classes = [IsAuthenticated]
@@ -185,6 +185,12 @@ from apps.accounts.api.pagination import AccountPagination
 ########################################################################
 
 class FinancialAccountViewSet(ModelViewSet):
+    """
+    Manage the authenticated user's financial accounts.
+
+    Supports listing, creation, retrieval, updates, deletion,
+    filtering, searching, ordering, and pagination.
+    """
     serializer_class = FinancialAccountSerializer
     permission_classes = [
         IsAuthenticated,
@@ -209,21 +215,31 @@ class FinancialAccountViewSet(ModelViewSet):
         )
 
     
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.filter_queryset(self.get_queryset())
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            response = self.get_paginated_response(serializer.data)
-            response.data["accounts"] = response.data.pop("results")
-            return response
+    #     page = self.paginate_queryset(queryset)
+    #     if page is not None:
+    #         serializer = self.get_serializer(page, many=True)
+    #         response = self.get_paginated_response(serializer.data)
+    #         response.data["accounts"] = response.data.pop("results")
+    #         return response
 
-        serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            "accounts": serializer.data
-        })
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response({
+    #         "accounts": serializer.data
+    #     })
 
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @extend_schema(
+        summary="Create a financial account",
+        description=(
+            "Creates an account for the authenticated user. "
+            "Ownership is assigned by the server."
+        ),
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.accounts.apps.AccountsConfig",
     "rest_framework",
     "django_filters",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -158,5 +159,19 @@ REST_FRAMEWORK = {
     },
 
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
+
+    "DEFAULT_SCHEMA_CLASS": (
+        "drf_spectacular.openapi.AutoSchema"
+    ),
     
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "MoneyMate API",
+    "DESCRIPTION": (
+        "REST API for personal finance management, "
+        "financial accounts, and transactions."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }

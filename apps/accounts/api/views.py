@@ -1,7 +1,9 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from common.permissions import IsObjectOwner
-# from rest_framework.views import APIView
+from rest_framework.views import APIView
+from rest_framework import status
+from apps.accounts.tasks import generate_monthly_report
 # from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.viewsets import ModelViewSet
 
@@ -243,3 +245,20 @@ class FinancialAccountViewSet(ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
+
+
+
+class GenerateMonthlyReportAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        task = generate_monthly_report.delay(request.user.pk)
+
+        return Response(
+            {
+                "message": "Monthly report queued successfully.",
+                "task_id": task.id,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )

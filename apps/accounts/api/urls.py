@@ -1,4 +1,4 @@
-# from django.urls import path
+from django.urls import path
 
 # from apps.accounts.api.views import (
 #     # FinancialAccountListAPIView,
@@ -21,7 +21,7 @@
 
 from rest_framework.routers import DefaultRouter
 
-from apps.accounts.api.views import FinancialAccountViewSet
+from apps.accounts.api.views import FinancialAccountViewSet,GenerateMonthlyReportAPIView
 
 router = DefaultRouter()
 
@@ -31,4 +31,11 @@ router.register(
     basename="api-account",
 )
 
-urlpatterns = router.urls
+urlpatterns = [
+    path(
+        "reports/monthly/",
+        GenerateMonthlyReportAPIView.as_view(),
+        name="monthly-report",
+    ),
+    *router.urls,
+]

@@ -11,8 +11,23 @@ def generate_monthly_report(user_id):
         user_id,
     )
 
-    return {
-        "status": "completed",
-        "user_id": user_id,
-        "report_type": "monthly",
-    }
+    try:
+        # Replace this with the real report-generation logic.
+        result = {
+            "status": "completed",
+            "user_id": user_id,
+        }
+
+        logger.info(
+            "Monthly report task completed for user ID %s",
+            user_id,
+        )
+
+        return result
+
+    except Exception:
+        logger.exception(
+            "Monthly report task failed for user ID %s",
+            user_id,
+        )
+        raise

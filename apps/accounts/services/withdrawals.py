@@ -5,6 +5,8 @@ from django.db import transaction
 
 from apps.accounts.models import FinancialAccount
 
+import logging
+logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def withdraw_money(*, user, account_id, amount):
@@ -31,5 +33,12 @@ def withdraw_money(*, user, account_id, amount):
     account.balance -= amount
 
     account.save(update_fields=["balance", "updated_at"])
+
+    transaction.on_commit(
+    lambda: logger.info(
+        "Withdrawal committed for account ID %s",
+        account.pk,
+    )
+)
 
     return account

@@ -3,6 +3,11 @@ from django.db import models
 # Create your models here.
 from django.contrib.auth.models import AbstractUser
 
+import hashlib
+import hmac
+
+from django.conf import settings
+
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
@@ -25,3 +30,46 @@ class User(AbstractUser):
     is_email_verified = models.BooleanField(
         default=False,
     )
+
+
+import hashlib
+
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
+
+class EmailOTP(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="email_otps",
+    )
+
+    otp_hash = models.CharField(max_length=64)
+
+    expires_at = models.DateTimeField()
+
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+    is_used = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
+
+    def verify_otp(self, otp):
+        submitted_hash = hmac.new(
+        settings.SECRET_KEY.encode(),
+        otp.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+        return hmac.compare_digest(
+        submitted_hash,
+        self.otp_hash,
+    )
+
+    def __str__(self):
+        return f"Email OTP for user {self.user_id}"

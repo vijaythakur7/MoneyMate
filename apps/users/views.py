@@ -14,6 +14,9 @@ from rest_framework.decorators import (
 
 from apps.users.serializers import UserRegistrationSerializer
 
+from django.db import transaction
+
+
 def hello(request):
     print("Method:", request.method)
     print("Path:", request.path)
@@ -151,8 +154,15 @@ def csrf_token_view(request):
         "csrfToken": token,
     })
 
-
+from apps.users.tasks import send_email_otp
 class UserRegistrationAPIView(CreateAPIView):
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+
+        transaction.on_commit(
+        lambda: send_email_otp.delay(user.pk)
+    )

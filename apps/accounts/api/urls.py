@@ -22,13 +22,21 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from apps.accounts.api.views import FinancialAccountViewSet,GenerateMonthlyReportAPIView
-
+from apps.accounts.api.document_views import (
+    FinancialDocumentViewSet,
+)
 router = DefaultRouter()
 
 router.register(
     "accounts",
     FinancialAccountViewSet,
     basename="api-account",
+)
+
+router.register(
+    "documents",
+    FinancialDocumentViewSet,
+    basename="financial-document",
 )
 
 urlpatterns = [

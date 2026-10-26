@@ -57,3 +57,28 @@ class FinancialAccount(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
+
+def financial_document_upload_path(instance, filename):
+    return (
+        f"financial_documents/user_{instance.user_id}/"
+        f"{filename}"
+    )
+
+
+class FinancialDocument(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="financial_documents",
+    )
+    title = models.CharField(max_length=100)
+    file = models.FileField(
+        upload_to=financial_document_upload_path,
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

@@ -1,6 +1,6 @@
 
 from django.test import override_settings
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APIClient, APITestCase
 
 from apps.users.models import User
 

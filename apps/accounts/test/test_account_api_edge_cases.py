@@ -6,7 +6,6 @@ from rest_framework.test import APITestCase
 
 from apps.accounts.models import FinancialAccount
 
-
 User = get_user_model()
 
 
@@ -77,7 +76,7 @@ class FinancialAccountEdgeCaseTests(APITestCase):
             password="TestPassword123!",
         )
 
-        other_account = FinancialAccount.objects.create(
+        FinancialAccount.objects.create(
             user=another_user,
             name="Bob Savings",
             account_type=FinancialAccount.AccountType.SAVINGS,

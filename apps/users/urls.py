@@ -1,8 +1,7 @@
 from django.urls import path
 
+from apps.users.email_otp_views import ResendEmailOTPAPIView, VerifyEmailOTPAPIView
 from apps.users.views import UserRegistrationAPIView
-from apps.users.email_otp_views import VerifyEmailOTPAPIView
-from apps.users.email_otp_views import ResendEmailOTPAPIView
 
 urlpatterns = [
     path(

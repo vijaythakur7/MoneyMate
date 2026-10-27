@@ -1,12 +1,11 @@
-from django.db import models
-
-# Create your models here.
-from django.contrib.auth.models import AbstractUser
-
 import hashlib
 import hmac
 
 from django.conf import settings
+
+# Create your models here.
+from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
 class User(AbstractUser):
@@ -32,9 +31,7 @@ class User(AbstractUser):
     )
 
 
-import hashlib
 
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
 

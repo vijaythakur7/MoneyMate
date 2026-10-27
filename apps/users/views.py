@@ -1,20 +1,18 @@
-from django.shortcuts import render
 
 # Create your views here.
+from django.db import transaction
 from django.http import HttpResponse
-from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework.decorators import (
     api_view,
     authentication_classes,
     permission_classes,
 )
+from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from apps.users.serializers import UserRegistrationSerializer
-
-from django.db import transaction
 
 
 def hello(request):
@@ -60,10 +58,10 @@ def search(request):
 
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
+from django.middleware.csrf import get_token
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.middleware.csrf import get_token
+
 
 class HelloAPIView(APIView):
 
@@ -155,6 +153,8 @@ def csrf_token_view(request):
     })
 
 from apps.users.tasks import send_email_otp
+
+
 class UserRegistrationAPIView(CreateAPIView):
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]

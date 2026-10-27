@@ -1,17 +1,12 @@
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
-from django.urls import reverse
 
 from apps.users.models import User
+
 # from apps.users.services.email_verification import (
 #     generate_verification_token,
 # )
-from celery import shared_task
-from django.conf import settings
-from django.core.mail import send_mail
-
-from apps.users.models import User
 from apps.users.services.email_otp import generate_email_otp
 
 
@@ -28,7 +23,6 @@ def send_email_otp(user_id):
 
     otp = generate_email_otp(user)
 
-    from django.conf import settings
 
     print("SMTP HOST:", settings.EMAIL_HOST)
     print("SMTP PORT:", settings.EMAIL_PORT)

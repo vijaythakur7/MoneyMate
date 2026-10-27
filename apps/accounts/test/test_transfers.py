@@ -3,9 +3,9 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from apps.users.models import User
 from apps.accounts.models import FinancialAccount
 from apps.accounts.services.transfers import transfer_money
+from apps.users.models import User
 
 
 class TransferMoneyTests(TestCase):

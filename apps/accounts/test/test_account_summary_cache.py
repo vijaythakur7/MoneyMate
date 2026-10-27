@@ -3,8 +3,8 @@ from django.test import SimpleTestCase
 
 from apps.accounts.services.account_summary_cache import (
     get_cached_summary,
-    set_cached_summary,
     invalidate_summary_cache,
+    set_cached_summary,
 )
 
 

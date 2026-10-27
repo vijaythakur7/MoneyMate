@@ -1,8 +1,9 @@
 from django.test import TestCase
 from rest_framework.test import APIClient, APITestCase
+
+from apps.accounts.api.serializers import FinancialAccountSerializer
 from apps.accounts.models import FinancialAccount
 from apps.users.models import User
-from apps.accounts.api.serializers import FinancialAccountSerializer
 
 # Create your tests here.
 
@@ -719,7 +720,7 @@ class FinancialAccountIsolationTests(TestCase):
 
 ###   Test another user's account   ###
 
-    def test_user_cannot_delete_another_users_account(self):
+    def test_user_cannot_delete_another_users_account1(self):
         client = APIClient()
 
         client.force_authenticate(

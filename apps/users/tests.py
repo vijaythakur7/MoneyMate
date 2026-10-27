@@ -1,10 +1,8 @@
+# Create your tests here.
+from django.contrib.auth import authenticate
 from django.test import Client, TestCase
 
-# Create your tests here.
-
-from django.contrib.auth import authenticate
-from apps.users.models import User
-from django.contrib.auth import login
+# from apps.users.models import User
 
 
 class UserAuthenticationTests(TestCase):

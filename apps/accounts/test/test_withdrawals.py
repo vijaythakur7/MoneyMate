@@ -10,7 +10,6 @@ from django.test import TransactionTestCase
 from apps.accounts.models import FinancialAccount
 from apps.accounts.services.withdrawals import withdraw_money
 
-
 User = get_user_model()
 
 

@@ -8,7 +8,6 @@ from django.utils import timezone
 
 from apps.users.models import EmailOTP
 
-
 OTP_EXPIRY_MINUTES = 5
 
 

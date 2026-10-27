@@ -5,8 +5,6 @@ from django.urls import path
 #     FinancialAccountDetailAPIView,
 #     FinancialAccountListCreateAPIView,
 # )
-
-
 # urlpatterns = [
 #     path("accounts/",
 #         FinancialAccountListCreateAPIView.as_view(),
@@ -18,13 +16,16 @@ from django.urls import path
 #         name="api-account-detail",
 #     ),
 # ]
-
 from rest_framework.routers import DefaultRouter
 
-from apps.accounts.api.views import FinancialAccountViewSet,GenerateMonthlyReportAPIView
 from apps.accounts.api.document_views import (
     FinancialDocumentViewSet,
 )
+from apps.accounts.api.views import (
+    FinancialAccountViewSet,
+    GenerateMonthlyReportAPIView,
+)
+
 router = DefaultRouter()
 
 router.register(

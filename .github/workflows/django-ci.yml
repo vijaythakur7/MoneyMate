@@ -59,3 +59,9 @@ jobs:
 
       - name: Validate OpenAPI schema
         run: python manage.py spectacular --file schema.yml --validate
+
+      - name: Run tests with coverage
+        run: |
+          python -m coverage erase
+          python -m coverage run --branch manage.py test
+          python -m coverage report --fail-under=80

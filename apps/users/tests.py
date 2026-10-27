@@ -1,9 +1,16 @@
 # Create your tests here.
 from django.contrib.auth import authenticate
 from django.test import Client, TestCase
-
+from django.contrib.auth.hashers import identify_hasher
+from apps.users.models import PendingRegistration
 # from apps.users.models import User
+from datetime import timedelta
 
+from django.utils import timezone
+from rest_framework.test import APITestCase
+
+from apps.users.models import PendingRegistration
+from apps.users.email_otp_views import VerifyRegistrationOTPAPIView
 
 class UserAuthenticationTests(TestCase):
 
@@ -120,7 +127,8 @@ class UserRegistrationAPITests(APITestCase):
             "timezone": "Asia/Kolkata",
         }
 
-    def test_user_can_register(self):
+
+    def test_registration_creates_pending_record_not_user(self):
         response = self.client.post(
             self.url,
             self.payload,
@@ -128,30 +136,48 @@ class UserRegistrationAPITests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 201)
+
+        self.assertFalse(
+            User.objects.filter(username="newuser").exists()
+        )
+
         self.assertTrue(
-            User.objects.filter(
-                username="newuser"
+            PendingRegistration.objects.filter(
+                username="newuser",
+                email="newuser@example.com",
             ).exists()
         )
+
         self.assertNotIn("password", response.data)
         self.assertNotIn("password_confirm", response.data)
 
-    def test_password_is_hashed(self):
+
+    def test_pending_registration_password_is_hashed(self):
         self.client.post(
             self.url,
             self.payload,
             format="json",
         )
 
-        user = User.objects.get(username="newuser")
+        pending = PendingRegistration.objects.get(
+            username="newuser"
+        )
 
         self.assertNotEqual(
-            user.password,
+            pending.password_hash,
             self.payload["password"],
         )
+
+        password_hasher = identify_hasher(pending.password_hash)
+        self.assertIsNotNone(password_hasher)
+
         self.assertTrue(
-            user.check_password(self.payload["password"])
+            password_hasher.verify(
+                self.payload["password"],
+                pending.password_hash,
+            )
         )
+
 
     def test_duplicate_email_is_rejected(self):
         User.objects.create_user(
@@ -193,3 +219,105 @@ class UserRegistrationAPITests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("password", response.data["error"]["details"],)
+
+
+
+
+class RegistrationOTPVerificationTests(APITestCase):
+    verify_url = "/api/auth/verify-registration-otp/"
+
+    def setUp(self):
+        self.password = "River!Stone_82#Cloud"
+        self.otp = "123456"
+
+        from django.contrib.auth.hashers import make_password
+
+        self.pending = PendingRegistration.objects.create(
+            username="otpuser",
+            email="otpuser@example.com",
+            password_hash=make_password(self.password),
+            mobile_number="9876543210",
+            currency="INR",
+            timezone="Asia/Kolkata",
+            otp_hash="",
+            otp_expires_at=timezone.now() + timedelta(minutes=5),
+        )
+
+        # Use the same HMAC hashing approach as the model.
+        import hashlib
+        import hmac
+        from django.conf import settings
+
+        self.pending.otp_hash = hmac.new(
+            settings.SECRET_KEY.encode(),
+            self.otp.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+        self.pending.save(update_fields=["otp_hash"])
+
+    def test_valid_otp_creates_user_and_deletes_pending_record(self):
+        response = self.client.post(
+            self.verify_url,
+            {"email": self.pending.email, "otp": self.otp},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(
+            User.objects.filter(username="otpuser").exists()
+        )
+        self.assertFalse(
+            PendingRegistration.objects.filter(
+                email="otpuser@example.com"
+            ).exists()
+        )
+
+        user = User.objects.get(username="otpuser")
+        self.assertTrue(user.is_email_verified)
+        self.assertTrue(user.check_password(self.password))
+
+    def test_invalid_otp_does_not_create_user(self):
+        response = self.client.post(
+            self.verify_url,
+            {"email": self.pending.email, "otp": "000000"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(
+            User.objects.filter(username="otpuser").exists()
+        )
+        self.assertEqual(
+            PendingRegistration.objects.get(pk=self.pending.pk).otp_attempts,
+            1,
+        )
+
+    def test_expired_otp_does_not_create_user(self):
+        self.pending.otp_expires_at = timezone.now() - timedelta(minutes=1)
+        self.pending.save(update_fields=["otp_expires_at"])
+
+        response = self.client.post(
+            self.verify_url,
+            {"email": self.pending.email, "otp": self.otp},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(
+            User.objects.filter(username="otpuser").exists()
+        )
+
+    def test_five_failed_attempts_block_verification(self):
+        self.pending.otp_attempts = 5
+        self.pending.save(update_fields=["otp_attempts"])
+
+        response = self.client.post(
+            self.verify_url,
+            {"email": self.pending.email, "otp": self.otp},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(
+            User.objects.filter(username="otpuser").exists()
+        )

@@ -14,6 +14,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from apps.users.serializers import UserRegistrationSerializer
 
+from django.contrib.auth.hashers import make_password
+from datetime import timedelta
+from django.utils import timezone
+from apps.users.models import PendingRegistration, User
+from apps.users.services.email_otp import generate_pending_registration_otp
+from apps.users.tasks import send_pending_registration_otp
+
 
 def hello(request):
     print("Method:", request.method)
@@ -155,14 +162,68 @@ def csrf_token_view(request):
 from apps.users.tasks import send_email_otp
 
 
+
 class UserRegistrationAPIView(CreateAPIView):
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
 
-    def perform_create(self, serializer):
-        user = serializer.save()
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        transaction.on_commit(
-        lambda: send_email_otp.delay(user.pk)
-    )
+        data = serializer.validated_data.copy()
+
+        password = data.pop("password")
+        data.pop("password_confirm", None)
+
+        # Check that an existing account doesn't already use these details.
+        if User.objects.filter(email__iexact=data["email"]).exists():
+            return Response(
+                {"email": ["A user with this email already exists."]},
+                status=400,
+            )
+
+        if User.objects.filter(username__iexact=data["username"]).exists():
+            return Response(
+                {"username": ["A user with this username already exists."]},
+                status=400,
+            )
+
+        with transaction.atomic():
+            # Replace any earlier pending registration for this email.
+            PendingRegistration.objects.filter(
+                email__iexact=data["email"],
+            ).delete()
+
+            # Also prevent a username from being pending for another email.
+            PendingRegistration.objects.filter(
+                username__iexact=data["username"],
+            ).delete()
+
+            pending = PendingRegistration.objects.create(
+                **data,
+                password_hash=make_password(password),
+                otp_hash="pending",
+                otp_expires_at=timezone.now() + timedelta(minutes=5),
+            )
+
+            # Generate and save the OTP before queuing the email.
+            otp = generate_pending_registration_otp(pending)
+
+            transaction.on_commit(
+                lambda: send_pending_registration_otp.delay(
+                    pending.pk,
+                )
+            )
+
+        return Response(
+            {
+                "detail": (
+                    "Registration started. Check your email "
+                    "for the verification code."
+                ),
+                "email": pending.email,
+            },
+            status=201,
+        )

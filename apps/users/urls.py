@@ -7,6 +7,11 @@ from apps.users.email_otp_views import (
     VerifyRegistrationOTPAPIView,
 )
 from apps.users.views import UserRegistrationAPIView
+from apps.users.views import (
+    RequestMobileOTPAPIView,
+    UserRegistrationAPIView,
+)
+from apps.users.views import VerifyMobileOTPAPIView
 
 urlpatterns = [
     path(
@@ -34,4 +39,16 @@ urlpatterns = [
         ResendEmailOTPAPIView.as_view(),
         name="resend-email-otp",
     ),
+
+    path(
+    "auth/mobile/request-otp/",
+    RequestMobileOTPAPIView.as_view(),
+    name="request-mobile-otp",
+    ),
+
+    path(
+    "auth/mobile/verify-otp/",
+    VerifyMobileOTPAPIView.as_view(),
+    name="verify-mobile-otp",
+),
 ]

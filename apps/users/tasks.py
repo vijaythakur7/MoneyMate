@@ -9,6 +9,15 @@ from apps.users.services.email_otp import (
     generate_pending_registration_otp,
 )
 
+import logging
+
+from django.core.exceptions import ImproperlyConfigured
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client
+from apps.users.services.sms_adapter import send_sms
+from apps.users.services.mobile_otp import generate_mobile_otp
+
+
 
 @shared_task(
     autoretry_for=(Exception,),
@@ -67,3 +76,41 @@ def send_pending_registration_otp(pending_registration_id):
     )
 
     return "Pending registration OTP sent"
+
+
+
+
+@shared_task
+def send_mobile_otp(user_id):
+    """Generate a mobile OTP and request SMS delivery."""
+    user = User.objects.get(pk=user_id)
+
+    if user.is_mobile_verified:
+        return "Mobile already verified"
+
+    if not user.mobile_number:
+        raise ValueError("User has no registered mobile number.")
+
+    mobile_number = user.mobile_number.strip()
+
+    if (
+        not mobile_number.startswith("+")
+        or not mobile_number[1:].isdigit()
+        or not 8 <= len(mobile_number[1:]) <= 15
+    ):
+        raise ValueError(
+            "Store the mobile number in E.164 format, "
+            "for example +91XXXXXXXXXX."
+        )
+
+    otp = generate_mobile_otp(user)
+
+    message_sid = send_sms(
+        to=mobile_number,
+        body=(
+            f"Your MoneyMate verification code is {otp}. "
+            "It expires in 5 minutes. Do not share this code."
+        ),
+    )
+
+    return f"Mobile OTP delivery submitted: {message_sid}"

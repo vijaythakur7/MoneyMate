@@ -30,6 +30,10 @@ class User(AbstractUser):
         default=False,
     )
 
+    is_mobile_verified = models.BooleanField(
+    default=False,
+    )
+
 
 
 from django.db import models
@@ -131,3 +135,33 @@ class PendingRegistration(models.Model):
 
     def __str__(self):
         return f"Pending registration: {self.email}"
+
+
+
+
+class MobileOTP(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="mobile_otps",
+    )
+
+    otp_hash = models.CharField(max_length=64)
+
+    expires_at = models.DateTimeField()
+
+    attempts = models.PositiveSmallIntegerField(
+        default=0,
+    )
+
+    is_used = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    def is_expired(self):
+        return django_timezone.now() >= self.expires_at
+
+    def __str__(self):
+        return f"Mobile OTP for user {self.user_id}"

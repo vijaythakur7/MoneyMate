@@ -21,6 +21,15 @@ from apps.users.models import PendingRegistration, User
 from apps.users.services.email_otp import generate_pending_registration_otp
 from apps.users.tasks import send_pending_registration_otp
 
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.users.tasks import send_mobile_otp
+from apps.users.services.mobile_otp import verify_mobile_otp
+
+
 
 def hello(request):
     print("Method:", request.method)
@@ -226,4 +235,162 @@ class UserRegistrationAPIView(CreateAPIView):
                 "email": pending.email,
             },
             status=201,
+        )
+
+
+
+
+
+
+# class RequestMobileOTPAPIView(APIView):
+#     """Request mobile OTP delivery for the authenticated user."""
+
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         user = request.user
+
+#         if user.is_mobile_verified:
+#             return Response(
+#                 {"detail": "Mobile number is already verified."},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         if not user.mobile_number or not user.mobile_number.strip():
+#             return Response(
+#                 {"detail": "Register a mobile number first."},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         transaction.on_commit(
+#             lambda: send_mobile_otp.delay(user.pk)
+#         )
+
+#         return Response(
+#             {
+#                 "detail": (
+#                     "Mobile OTP delivery request queued. "
+#                     "SMS delivery is not yet confirmed."
+#                 )
+#             },
+#             status=status.HTTP_202_ACCEPTED,
+#         )
+import logging
+
+from apps.users.services.twilio_verify import check_verification_code
+
+logger = logging.getLogger(__name__)
+
+
+
+class VerifyMobileOTPAPIView(APIView):
+    """Verify a mobile code using Twilio Verify."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        if user.is_mobile_verified:
+            return Response(
+                {"detail": "Mobile number is already verified."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        mobile_number = (user.mobile_number or "").strip()
+        if not mobile_number:
+            return Response(
+                {"detail": "Register a mobile number first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if "otp" not in request.data:
+            return Response(
+                {"otp": ["This field is required."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        otp = request.data["otp"]
+
+        try:
+            approved = check_verification_code(mobile_number, otp)
+        except Exception:
+            logger.exception(
+                "Twilio Verify check failed for user_id=%s",
+                user.pk,
+            )
+            return Response(
+                {"detail": "Unable to verify the code right now."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        if not approved:
+            return Response(
+                {"detail": "Invalid or expired verification code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.is_mobile_verified = True
+        user.save(update_fields=["is_mobile_verified"])
+
+        return Response(
+            {"detail": "Mobile number verified successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+
+
+from apps.users.services.twilio_verify import send_verification_code
+
+
+class RequestMobileOTPAPIView(APIView):
+    """Request a real SMS verification code through Twilio Verify."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        if user.is_mobile_verified:
+            return Response(
+                {"detail": "Mobile number is already verified."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        mobile_number = (user.mobile_number or "").strip()
+
+        if not mobile_number:
+            return Response(
+                {"detail": "Register a mobile number first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            twilio_status = send_verification_code(mobile_number)
+        except ValueError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception:
+            # Log the full exception on the server, not in the API response.
+            import logging
+            logging.getLogger(__name__).exception(
+                "Unable to start Twilio Verify for user_id=%s",
+                user.pk,
+            )
+            return Response(
+                {"detail": "Unable to send the verification code right now."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        if twilio_status != "pending":
+            return Response(
+                {"detail": "Twilio did not start the verification request."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(
+            {"detail": "Verification code sent by SMS."},
+            status=status.HTTP_200_OK,
         )

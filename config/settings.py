@@ -207,7 +207,8 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300
 
 
-
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -226,11 +227,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": os.path.join(
-                BASE_DIR,
-                "logs",
-                "moneymate.log",
-            ),
+            "filename": str(LOG_DIR / "moneymate.log"),
             "formatter": "standard",
         },
     },

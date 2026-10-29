@@ -19,7 +19,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from apps.accounts.api.document_views import (
-    FinancialDocumentViewSet,
+    FinancialDocumentViewSet,DocumentViewSet
 )
 from apps.accounts.api.views import (
     FinancialAccountViewSet,
@@ -36,8 +36,8 @@ router.register(
 
 router.register(
     "documents",
-    FinancialDocumentViewSet,
-    basename="financial-document",
+    DocumentViewSet,
+    basename="document",
 )
 
 urlpatterns = [
